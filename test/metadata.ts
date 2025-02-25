@@ -1,6 +1,3 @@
-// src/metadata.ts
-import { Metadata } from "./types.ts";
-
 const metadata: Metadata = {
     users: {
         tableMeta: {
@@ -16,7 +13,7 @@ const metadata: Metadata = {
                 validation: 'email',
                 required: true,
                 uiComponent: 'EmailInput',
-                prefix: ''
+                prefix: '📧'
             },
         },
     },
