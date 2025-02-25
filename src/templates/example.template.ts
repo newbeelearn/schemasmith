@@ -1,7 +1,6 @@
 // src/templates/example.template.ts
-import { Schema, Metadata } from "../types.ts";
 
-export function generate(schema: Schema, metadata: Metadata): string {
+export function generate(schema: any, metadata: any): string {
     let output = `// Generated code - ${new Date().toISOString()}\n\n`;
 
     for (const tableName in schema.tables) {

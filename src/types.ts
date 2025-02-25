@@ -18,10 +18,19 @@ export interface IndexSchema {
   columns: string[];
 }
 
+export interface ConstraintSchema {
+  type: 'PRIMARY KEY' | 'FOREIGN KEY' | 'UNIQUE' | 'CHECK';
+  columns?: string[];
+  references?: { table: string; columns: string[] };
+  checkExpression?: string;
+  name?: string;
+}
+
 export interface TableSchema {
   name: string;
   columns: Record<string, ColumnSchema>;
   indexes: Record<string, IndexSchema>;
+  constraints: Record<string, ConstraintSchema>;
 }
 
 export interface Schema {

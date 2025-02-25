@@ -45,6 +45,22 @@ export default {
         "unique": true,
         "expose": false
       }
+    },
+    "constraints": {
+      "pk": {
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ],
+        "name": "pk"
+      },
+      "sqlite_autoindex_users_1": {
+        "type": "UNIQUE",
+        "columns": [
+          "email"
+        ],
+        "name": "sqlite_autoindex_users_1"
+      }
     }
   },
   "posts": {
@@ -78,7 +94,29 @@ export default {
         "expose": "inout"
       }
     },
-    "indexes": {}
+    "indexes": {},
+    "constraints": {
+      "pk": {
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ],
+        "name": "pk"
+      },
+      "fk_0": {
+        "type": "FOREIGN KEY",
+        "columns": [
+          "userId"
+        ],
+        "references": {
+          "table": "users",
+          "columns": [
+            "id"
+          ]
+        },
+        "name": "fk_0"
+      }
+    }
   },
   "comments": {
     "tableMeta": {
@@ -111,6 +149,41 @@ export default {
         "expose": "inout"
       }
     },
-    "indexes": {}
+    "indexes": {},
+    "constraints": {
+      "pk": {
+        "type": "PRIMARY KEY",
+        "columns": [
+          "id"
+        ],
+        "name": "pk"
+      },
+      "fk_0": {
+        "type": "FOREIGN KEY",
+        "columns": [
+          "userId"
+        ],
+        "references": {
+          "table": "users",
+          "columns": [
+            "id"
+          ]
+        },
+        "name": "fk_0"
+      },
+      "fk_1": {
+        "type": "FOREIGN KEY",
+        "columns": [
+          "postId"
+        ],
+        "references": {
+          "table": "posts",
+          "columns": [
+            "id"
+          ]
+        },
+        "name": "fk_1"
+      }
+    }
   }
 };
