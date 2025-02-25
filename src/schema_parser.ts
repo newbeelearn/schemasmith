@@ -1,10 +1,9 @@
 // src/schema_parser.ts
-import { DB } from "https://deno.land/x/sqlite@v3.8/mod.ts";
+import { DB } from "https://deno.land/x/sqlite@v3.9.0/mod.ts";
 import * as path from "https://deno.land/std@0.208.0/path/mod.ts";
 import { Schema, ColumnSchema, IndexSchema, ConstraintSchema } from "./types.ts";
 import { logVerbose, fileExists, getSqliteFilename } from "./utils.ts";
 import { ensureDir } from "https://deno.land/std@0.208.0/fs/ensure_dir.ts";
-import { copy } from "https://deno.land/std@0.208.0/fs/copy.ts";
 
 const SCHEMA_VERSION = "1.0.0";
 
@@ -19,35 +18,30 @@ export async function parseSchema(schemaPath: string, outputDir: string, verbose
       .filter(entry => entry.isFile && entry.name.endsWith('.sql'))
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));  // Numerical sort
 
-    const tempDbPath = getSqliteFilename(schemaPath); // Use temporary file
-    db = new DB(tempDbPath);
-
-    try {
-      for (const file of migrationFiles) {
-        const filePath = path.join(schemaPath, file.name);
-        const sql = await Deno.readTextFile(filePath);
-        stitchedSql += sql + '\n';
-        db.execute(sql);
-      }
-    } catch(error) {
-      db.close();
-      await Deno.remove(tempDbPath).catch(() => {});
-      throw error;
+    // Stitch the SQL files together
+    for (const file of migrationFiles) {
+      const filePath = path.join(schemaPath, file.name);
+      const sql = await Deno.readTextFile(filePath);
+      stitchedSql += sql + '\n';
     }
 
+    // Create an in-memory database
+    db = new DB(":memory:");
 
-    // Write stitched SQL
+    try {
+      // Execute the STITCHED SQL
+      db.execute(stitchedSql);
+    } catch (error) {
+      db.close();
+      throw error; // Re-throw the error
+    }
+
+    // Write stitched SQL (for debugging/auditing)
     const stitchedOutputPath = path.join(outputDir, stitchedSqlOutput);
     await ensureDir(outputDir);
     await Deno.writeTextFile(stitchedOutputPath, stitchedSql);
     logVerbose(`Stitched SQL written to: ${stitchedOutputPath}`, verbose);
 
-    // Switch to in-memory DB for introspection for safety
-    const tempDb = new DB();
-    db.backup(tempDb);
-    db.close();
-    await Deno.remove(tempDbPath); // Clean up temp file
-    db = tempDb;
   } else {
     logVerbose(`Parsing schema from single SQL file: ${schemaPath}`, verbose);
     const sql = await Deno.readTextFile(schemaPath);
