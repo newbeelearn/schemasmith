@@ -104,7 +104,7 @@ export async function scaffoldMetadata(args: CliOptions & { config?: string; _: 
   const absoluteStitchedSqlOutputPath = options.stitchedSqlOutput ? path.resolve(configDir, options.stitchedSqlOutput) : undefined;
   const absoluteSchemaJsonOutputPath = options.schemaJsonOutput ? path.resolve(configDir, options.schemaJsonOutput) : undefined;
 
-  await scaffold(absoluteSchemaPath, absoluteOutputPath, options.merge, options.verbose, absoluteStitchedSqlOutputPath, absoluteSchemaJsonOutputPath);
+  await scaffold(absoluteSchemaPath, absoluteOutputPath, options.merge, options.verbose, absoluteStitchedSqlOutputPath!, absoluteSchemaJsonOutputPath!);
 }
 
 export async function inspect(args: CliOptions & { config?: string; _: (string | number)[] }): Promise<void> {

@@ -57,6 +57,7 @@ function mergeMetadata(existing: Metadata, generated: Metadata): Metadata {
                 }
                 for (const columnName in generated[tableName].columns) {
                     if (!merged[tableName].columns![columnName]) {
+		  // @ts-ignore
                         merged[tableName].columns![columnName] = generated[tableName].columns[columnName]; // Add new column
                     }
                 }
@@ -69,6 +70,7 @@ function mergeMetadata(existing: Metadata, generated: Metadata): Metadata {
               }
               for(const indexName in generated[tableName].indexes) {
                 if(!merged[tableName].indexes![indexName]) {
+		  // @ts-ignore
                   merged[tableName].indexes![indexName] = generated[tableName].indexes[indexName]; // Add new index
                 }
               }

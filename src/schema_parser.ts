@@ -66,9 +66,16 @@ export async function parseSchema(schemaPath: string, outputDir: string, verbose
     for (const [tableName] of tables) {
       // Get column info
       const columns: Record<string, ColumnSchema> = {};
-      const columnInfo = db.queryEntries<ColumnSchema>(`PRAGMA table_info(${tableName});`);
+      const columnInfo = db.queryEntries(`PRAGMA table_info(${tableName});`);
       for (const col of columnInfo) {
-        columns[col.name] = col;
+        columns[String(col.name)] = {
+          cid: col.cid as number,
+          name: col.name as string,
+          type: col.type as string,
+          notnull: col.notnull as number,
+          dflt_value: col.dflt_value,
+          pk: col.pk as number,
+        };
       }
 
       // Get index info
@@ -92,12 +99,15 @@ export async function parseSchema(schemaPath: string, outputDir: string, verbose
       const constraints: Record<string, ConstraintSchema> = {};
 
       // Primary Key Constraint (from table_info)
-      const primaryKeyColumns = columnInfo.filter(col => col.pk > 0).sort((a,b) => a.pk - b.pk).map(col => col.name);
+      const primaryKeyColumns = columnInfo
+        .filter((col) => (col.pk as number) > 0)
+        .sort((a, b) => (a.pk as number) - (b.pk as number))
+        .map((col) => col.name as string);
       if (primaryKeyColumns.length > 0) {
-        constraints['pk'] = {  // Use a consistent name like 'pk'
-          type: 'PRIMARY KEY',
+        constraints["pk"] = {
+          type: "PRIMARY KEY",
           columns: primaryKeyColumns,
-          name: 'pk' //primary key contraint name
+          name: "pk",
         };
       }
 
@@ -135,8 +145,8 @@ export async function parseSchema(schemaPath: string, outputDir: string, verbose
         }
       }
 
-      schema.tables[tableName] = {
-        name: tableName,
+      schema.tables[tableName as string] = {
+        name: tableName as string,
         columns,
         indexes,
         constraints,

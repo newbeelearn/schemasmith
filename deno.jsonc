@@ -2,7 +2,8 @@
 {
   "tasks": {
     "start": "deno run -A main.ts",
-    "dev": "deno run -A --watch main.ts"
+    "dev": "deno run -A --watch main.ts",
+    "compile": "deno compile --allow-read --allow-write --allow-run --allow-env --output codegen main.ts"
   },
   "fmt": {
     "useTabs": false,
