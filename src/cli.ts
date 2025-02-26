@@ -9,10 +9,10 @@ import * as path from "https://deno.land/std@0.208.0/path/mod.ts";
 import { CliOptions, Config } from "./types.ts";
 import { ensureDir } from "https://deno.land/std@0.208.0/fs/ensure_dir.ts";
 
-async function loadConfig(configPath?: string): Promise<{ config: Partial<Config>; configDir: string }> {
+async function loadConfig(configPath?: string, projectDir: string = Deno.cwd()): Promise<{ config: Partial<Config>; configDir: string }> {
   let absoluteConfigPath = configPath
     ? path.resolve(Deno.cwd(), configPath)
-    : path.resolve(Deno.cwd(), "codegen.config.ts");
+    : path.resolve(projectDir, "codegen.config.ts");
 
   try {
     const { default: userConfig } = await import(path.toFileUrl(absoluteConfigPath).href);
@@ -20,7 +20,7 @@ async function loadConfig(configPath?: string): Promise<{ config: Partial<Config
     return { config: userConfig, configDir };
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      return { config: {}, configDir: Deno.cwd() };
+      return { config: {}, configDir: projectDir };
     } else {
       console.error(`Error loading config file: ${absoluteConfigPath}`, error);
       throw error;
@@ -48,9 +48,10 @@ function mergeConfigAndOptions(config: Partial<Config>, options: CliOptions): Re
 
   return merged as any;
 }
-
-export async function generate(args: CliOptions & { config?: string }): Promise<void> {
-  const { config, configDir } = await loadConfig(args.config);
+export async function generate(args: CliOptions & { config?: string; _: (string | number)[] }): Promise<void> {
+  const projectDir = args._[1] ? path.resolve(Deno.cwd(), String(args._[1])) : Deno.cwd(); // Positional arg
+  const configPath = args.config;
+  const { config, configDir } = await loadConfig(configPath, projectDir); // Pass projectDir
   const options = mergeConfigAndOptions(config, args);
 
   if (!options.schema || !options.templates || !options.output) {
@@ -87,8 +88,10 @@ export async function generate(args: CliOptions & { config?: string }): Promise<
   await generateFiles(absoluteOutputPath, generatedFiles, true, false, options.verbose);
 }
 
-export async function scaffoldMetadata(args: CliOptions & { config?: string }): Promise<void> {
-  const { config, configDir } = await loadConfig(args.config);
+export async function scaffoldMetadata(args: CliOptions & { config?: string; _: (string | number)[] }): Promise<void> {
+  const projectDir = args._[1] ? path.resolve(Deno.cwd(), String(args._[1])) : Deno.cwd();  // Positional arg
+  const configPath = args.config;
+  const { config, configDir } = await loadConfig(configPath, projectDir); // Pass projectDir
   const options = mergeConfigAndOptions(config, args);
 
   if (!options.schema || !options.output) {
@@ -98,15 +101,16 @@ export async function scaffoldMetadata(args: CliOptions & { config?: string }): 
 
   const absoluteSchemaPath = path.resolve(configDir, options.schema);
   const absoluteOutputPath = path.resolve(configDir, options.output);
-  const absoluteStitchedSqlOutputPath = options.stitchedSqlOutput ? path.resolve(Deno.cwd(), options.stitchedSqlOutput) : undefined;
-  const absoluteSchemaJsonOutputPath = options.schemaJsonOutput ? path.resolve(Deno.cwd(), options.schemaJsonOutput) : undefined;
-
+  const absoluteStitchedSqlOutputPath = options.stitchedSqlOutput ? path.resolve(configDir, options.stitchedSqlOutput) : undefined;
+  const absoluteSchemaJsonOutputPath = options.schemaJsonOutput ? path.resolve(configDir, options.schemaJsonOutput) : undefined;
 
   await scaffold(absoluteSchemaPath, absoluteOutputPath, options.merge, options.verbose, absoluteStitchedSqlOutputPath, absoluteSchemaJsonOutputPath);
 }
 
-export async function inspect(args: CliOptions & { config?: string }): Promise<void> {
-  const { config, configDir } = await loadConfig(args.config); // Get config and dir
+export async function inspect(args: CliOptions & { config?: string; _: (string | number)[] }): Promise<void> {
+  const projectDir = args._[1] ? path.resolve(Deno.cwd(), String(args._[1])) : Deno.cwd();
+  const configPath = args.config;
+  const { config, configDir } = await loadConfig(configPath, projectDir);
   const options = mergeConfigAndOptions(config, args);
 
   if (!options.schema) {
@@ -117,8 +121,8 @@ export async function inspect(args: CliOptions & { config?: string }): Promise<v
   const absoluteSchemaPath = path.resolve(configDir, options.schema);
   const absoluteMetadataPath = options.metadata ? path.resolve(configDir, options.metadata) : undefined;
   const absoluteOutputPath = options.output ? path.resolve(configDir, options.output) : Deno.cwd();
-  const absoluteStitchedSqlOutputPath = options.stitchedSqlOutput ? path.resolve(Deno.cwd(), options.stitchedSqlOutput) : undefined;
-  const absoluteSchemaJsonOutputPath = options.schemaJsonOutput ? path.resolve(Deno.cwd(), options.schemaJsonOutput) : undefined;
+  const absoluteStitchedSqlOutputPath = options.stitchedSqlOutput ? path.resolve(configDir, options.stitchedSqlOutput) : undefined;
+  const absoluteSchemaJsonOutputPath = options.schemaJsonOutput ? path.resolve(configDir, options.schemaJsonOutput) : undefined;
 
   const schemaData = await parseSchema(absoluteSchemaPath, absoluteOutputPath, options.verbose, absoluteStitchedSqlOutputPath, absoluteSchemaJsonOutputPath);
   console.log("Parsed Schema:");
@@ -131,8 +135,8 @@ export async function inspect(args: CliOptions & { config?: string }): Promise<v
   }
 }
 
-export async function init(args: { _: (string | number)[]; output?: string }): Promise<void> {
-  const targetDir = args.output ? path.resolve(Deno.cwd(), args.output) : Deno.cwd();
+export async function init(args: { _: (string | number)[] }): Promise<void> {
+  const targetDir = args._[1] ? path.resolve(Deno.cwd(), String(args._[1])) : Deno.cwd();
   const configFilePath = path.join(targetDir, "codegen.config.ts");
 
   if (await fileExists(configFilePath)) {
