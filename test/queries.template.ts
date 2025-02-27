@@ -1,4 +1,4 @@
-function getPrimaryKeyColumnName(tableName: string, schema: Schema): string {
+function getPrimaryKeyColumnName(tableName, schema) {
   const table = schema.tables[tableName];
   if (!table) {
     return '';
@@ -12,7 +12,7 @@ function getPrimaryKeyColumnName(tableName: string, schema: Schema): string {
   return '';
 }
 
-export function generate(schema: Schema, metadata: Metadata): string {
+function generate(schema, metadata) {
   let output = `// Generated code - ${new Date().toISOString()}\n\n`;
   const tbls = Object.keys(schema.tables);
   output +=
