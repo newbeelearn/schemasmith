@@ -9,7 +9,7 @@ export async function scaffoldMetadata(schemaPath: string, outputPath: string, m
     const outputDir = path.dirname(outputPath);
     const schema = await parseSchema(schemaPath, outputDir, verbose, stitchedSqlOutput, schemaJsonOutput);
 
-    const internalMetadataPath = path.join(outputDir, '_internal_metadata.ts');
+    const internalMetadataPath = path.join(outputDir, '_internal_metadata.json');
     const absoluteInternalMetadataPath = path.resolve(Deno.cwd(), internalMetadataPath); // Absolute path
 
 
@@ -18,15 +18,24 @@ export async function scaffoldMetadata(schemaPath: string, outputPath: string, m
         console.error("Please run the 'generate' command first to create the internal metadata.");
         Deno.exit(1);
     }
-    const { default: internalMetadata } = await import(path.toFileUrl(absoluteInternalMetadataPath).href);
+    const internalMetadataText = Deno.readTextFileSync(absoluteInternalMetadataPath);
+    const internalMetadata = JSON.parse(internalMetadataText);
 
     if (merge) {
         const absoluteOutputPath = path.resolve(Deno.cwd(), outputPath); // Absolute path
         if (await fileExists(absoluteOutputPath)) {
-            const { default: existingMetadata } = await import(path.toFileUrl(absoluteOutputPath).href);
+          let existingMetadata: Metadata = {};
+	  const existingText = Deno.readTextFileSync(absoluteOutputPath);
 
-            const mergedMetadata = mergeMetadata(existingMetadata, internalMetadata);
-            await writeMetadata(absoluteOutputPath, mergedMetadata, verbose);
+	  try {
+            existingMetadata = JSON.parse(existingText);
+          } catch(e) {
+            const metadataFn = new Function(`return (${existingText});`);
+            existingMetadata = metadataFn();
+          }
+
+	  const mergedMetadata = mergeMetadata(existingMetadata, internalMetadata);
+          await writeMetadata(absoluteOutputPath, mergedMetadata, verbose);
 
         } else {
             console.warn(`Merge requested, but metadata file does not exist: ${absoluteOutputPath}.  Creating new file.`);
@@ -103,6 +112,10 @@ function mergeMetadata(existing: Metadata, generated: Metadata): Metadata {
 
 async function writeMetadata(outputPath: string, metadata: Metadata, verbose: boolean | undefined) {
     await ensureDir(path.dirname(outputPath));
-    await Deno.writeTextFile(outputPath, `export default ${JSON.stringify(metadata, null, 2)};`);
+    if(outputPath.endsWith('.json')) {
+      await Deno.writeTextFile(outputPath, `${JSON.stringify(metadata, null, 2)}`);
+    } else {
+      await Deno.writeTextFile(outputPath, `export default ${JSON.stringify(metadata, null, 2)};`);
+    }
     logVerbose(`Metadata file written to: ${outputPath}`, verbose);
 }

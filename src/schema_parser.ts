@@ -203,7 +203,7 @@ async function generateInternalMetadata(schema: Schema, outputDir: string, verbo
     }
   }
 
-  const outputPath = path.join(outputDir, '_internal_metadata.ts');
-  await Deno.writeTextFile(outputPath, `// This file is auto-generated and should NOT be edited manually.\nexport default ${JSON.stringify(internalMetadata, null, 2)};`);
+  const outputPath = path.join(outputDir, '_internal_metadata.json');
+  await Deno.writeTextFile(outputPath, JSON.stringify(internalMetadata, null, 2));
   logVerbose(`Internal metadata written to: ${outputPath}`, verbose);
 }
