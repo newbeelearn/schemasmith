@@ -7,8 +7,22 @@ export async function processMetadata(metadataPath: string, verbose: boolean | u
   const absoluteMetadataPath = path.resolve(Deno.cwd(), metadataPath);
 
   if (await fileExists(absoluteMetadataPath)) {
-    const { default: metadata } = await import(path.toFileUrl(absoluteMetadataPath).href);
-    return metadata;
+    try {
+      const metadataText = Deno.readTextFileSync(absoluteMetadataPath);
+
+      try {
+        const metadata = JSON.parse(metadataText);
+        return metadata;
+      } catch {
+        const metadataFn = new Function(`return (${metadataText});`);
+        const metadata = metadataFn();
+        return metadata;
+      }
+
+    } catch (error) {
+      console.error(`Error reading or parsing metadata file: ${absoluteMetadataPath}`, error);
+      throw error;
+    }
   } else {
     logVerbose(`Metadata file not found: ${absoluteMetadataPath}. Using internal metadata.`, verbose);
     return {};

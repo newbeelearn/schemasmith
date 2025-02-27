@@ -12,10 +12,11 @@ import { ensureDir } from "https://deno.land/std@0.208.0/fs/ensure_dir.ts";
 async function loadConfig(configPath?: string, projectDir: string = Deno.cwd()): Promise<{ config: Partial<Config>; configDir: string }> {
   let absoluteConfigPath = configPath
     ? path.resolve(Deno.cwd(), configPath)
-    : path.resolve(projectDir, "codegen.config.ts");
+    : path.resolve(projectDir, "codegen.config.json");
 
   try {
-    const { default: userConfig } = await import(path.toFileUrl(absoluteConfigPath).href);
+    const configText = Deno.readTextFileSync(absoluteConfigPath);
+    const userConfig = JSON.parse(configText);
     const configDir = path.dirname(absoluteConfigPath);
     return { config: userConfig, configDir };
   } catch (error) {
@@ -137,23 +138,23 @@ export async function inspect(args: CliOptions & { config?: string; _: (string |
 
 export async function init(args: { _: (string | number)[] }): Promise<void> {
   const targetDir = args._[1] ? path.resolve(Deno.cwd(), String(args._[1])) : Deno.cwd();
-  const configFilePath = path.join(targetDir, "codegen.config.ts");
+  const configFilePath = path.join(targetDir, "codegen.config.json");
 
   if (await fileExists(configFilePath)) {
-    console.log(`codegen.config.ts already exists in ${targetDir}.`);
+    console.log(`codegen.config.json already exists in ${targetDir}.`);
     return;
   }
   await ensureDir(targetDir);
 
-  const defaultConfigContent = `export default {
-    schema: {
-        path: './src/db/schema.sql', // Or path to migrations directory
+  const defaultConfigContent = `{
+    "schema": {
+        "path": "./src/db/schema.sql"
     },
-    metadata: './src/metadata.ts',
-    templates: './src/templates/',
-    output: './src/generated/',
-};`;
+    "metadata": "./src/metadata.ts",
+    "templates": "./src/templates/",
+    "output": "./src/generated/"
+}`;
 
   await Deno.writeTextFile(configFilePath, defaultConfigContent);
-  console.log(`Created codegen.config.ts in ${targetDir}`);
+  console.log(`Created codegen.config.json in ${targetDir}`);
 }
