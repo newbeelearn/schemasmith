@@ -3,7 +3,6 @@ import { parseSchema } from "./schema_parser.ts";
 import { processMetadata } from "./metadata_processor.ts";
 import { processTemplates } from "./template_engine.ts";
 import { generateFiles } from "./file_generator.ts";
-import { scaffoldMetadata as scaffold } from "./metadata_scaffolder.ts";
 import { logVerbose, fileExists } from "./utils.ts";
 import * as path from "https://deno.land/std@0.208.0/path/mod.ts";
 import { CliOptions, Config } from "./types.ts";
@@ -87,25 +86,6 @@ export async function generate(args: CliOptions & { config?: string; _: (string 
   }
   const generatedFiles = await processTemplates(absoluteTemplatesPath, schemaData, metadataData, options.verbose);
   await generateFiles(absoluteOutputPath, generatedFiles, true, false, options.verbose);
-}
-
-export async function scaffoldMetadata(args: CliOptions & { config?: string; _: (string | number)[] }): Promise<void> {
-  const projectDir = args._[1] ? path.resolve(Deno.cwd(), String(args._[1])) : Deno.cwd();  // Positional arg
-  const configPath = args.config;
-  const { config, configDir } = await loadConfig(configPath, projectDir); // Pass projectDir
-  const options = mergeConfigAndOptions(config, args);
-
-  if (!options.schema || !options.output) {
-    console.error("Error: Missing required arguments.  Please provide --schema and --output.");
-    Deno.exit(1);
-  }
-
-  const absoluteSchemaPath = path.resolve(configDir, options.schema);
-  const absoluteOutputPath = path.resolve(configDir, options.output);
-  const absoluteStitchedSqlOutputPath = options.stitchedSqlOutput ? path.resolve(configDir, options.stitchedSqlOutput) : undefined;
-  const absoluteSchemaJsonOutputPath = options.schemaJsonOutput ? path.resolve(configDir, options.schemaJsonOutput) : undefined;
-
-  await scaffold(absoluteSchemaPath, absoluteOutputPath, options.merge, options.verbose, absoluteStitchedSqlOutputPath!, absoluteSchemaJsonOutputPath!);
 }
 
 export async function inspect(args: CliOptions & { config?: string; _: (string | number)[] }): Promise<void> {
